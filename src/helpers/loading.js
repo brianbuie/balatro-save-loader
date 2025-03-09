@@ -4,6 +4,7 @@ const returnPrefix = /^return /;
 const stringKeys = /\["(.*?)"\]=/g;
 const numberKeys = /\[(\d+)\]=/g;
 const trailingCommas = /,}/g;
+const infValue = /:inf/g;
 
 const numberKey = /"NOSTRING_(\d+)":/g
 const stringKey = /"([^"]*?)":/g;
@@ -21,7 +22,8 @@ function rawToJSON(data) {
     .replace(returnPrefix, "")
     .replace(stringKeys, "\"$1\":")
     .replace(numberKeys, "\"NOSTRING_$1\":")
-    .replace(trailingCommas, "}"));
+    .replace(trailingCommas, "}")
+    .replace(infValue, ":\"_INFINITY\""));
 }
 
 function FixJSONArrays (json) {
@@ -67,7 +69,8 @@ function FixLuaArrays (json) {
 function JSONToRaw(data) {
   return 'return ' + JSON.stringify(data)
     .replace(numberKey, "[$1]=")
-    .replace(stringKey, "[\"$1\"]=");
+    .replace(stringKey, "[\"$1\"]=")
+    .replaceAll(/\"_INFINITY\"/g, 'inf');
 };
 
 function processFile(buffer) {
