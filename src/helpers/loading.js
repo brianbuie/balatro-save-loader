@@ -4,10 +4,13 @@ const returnPrefix = /^return /;
 const stringKeys = /\["(.*?)"\]=/g;
 const numberKeys = /\[(\d+)\]=/g;
 const trailingCommas = /,}/g;
-const infValue = /:inf/g;
 
 const numberKey = /"NOSTRING_(\d+)":/g
 const stringKey = /"([^"]*?)":/g;
+
+// Handle NaN and Infinity
+const nanToJSON = [/:(inf|nan)/g, ":\"NANREPLACE_$1\""];
+const nanToRaw = [/"NANREPLACE_([^"]+)"/g, '$1'];
 
 function decompress(data) {
   return Pako.inflateRaw(data, { to: "string" });
@@ -22,8 +25,8 @@ function rawToJSON(data) {
     .replace(returnPrefix, "")
     .replace(stringKeys, "\"$1\":")
     .replace(numberKeys, "\"NOSTRING_$1\":")
-    .replace(trailingCommas, "}")
-    .replace(infValue, ":\"_INFINITY\""));
+    .replace(...nanToJSON)
+    .replace(trailingCommas, "}"));
 }
 
 function FixJSONArrays (json) {
@@ -70,7 +73,7 @@ function JSONToRaw(data) {
   return 'return ' + JSON.stringify(data)
     .replace(numberKey, "[$1]=")
     .replace(stringKey, "[\"$1\"]=")
-    .replaceAll(/\"_INFINITY\"/g, 'inf');
+    .replace(...nanToRaw);
 };
 
 function processFile(buffer) {
